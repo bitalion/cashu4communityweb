@@ -58,88 +58,86 @@
     <main>
         <section class="tutorial-hero">
             <div class="container">
-                <h1 class="tutorial-title">Nutshell Cashu Mint</h1>
+                <h1 class="tutorial-title">6 Mint de Cashu (Nutshell)</h1>
             </div>
         </section>
 
         <section class="tutorial-content">
             <div class="container">
 
-                <p>El Mint de cashu es el componente principal de la infraestructura de cashu, es quien custodia los bitcoins de los usuarios, a cambio emite tokens ("cupones digitales") que representan ese valor. Conociendo esto explicaremos el proceso de configuración.</p>
+                <p>El Mint de cashu es el componente principal de la infraestructura de cashu, es quien custodia los bitcoins de los usuarios, a cambio emite tokens ("cupones digitales") que representan ese valor. Conociendo esto explicaremos el proceso de configuración paso a paso.</p>
 
-                <h2>Configurando el backend lightning (LNbits)</h2>
-                <p>En la sección anterior de LNbits configuramos una billetera llamada <code>Cashu Mint</code> y copiamos la clave API para poder crear y recibir pagos. Ahora configuraremos estos parámetros en el archivo <code>.env</code> del Mint para que pueda usar LNbits.</p>
+                <h2>6.1 Configurando el backend lightning (LNbits)</h2>
+                <p>A continuación, configuraremos una nueva billetera en LNbits que actuará como depósito principal de los fondos de los usuarios del Mint. Esta billetera será la encargada de recibir los sats cuando un usuario quiera depositar fondos en el Mint, y también de enviar los sats cuando un usuario quiera retirarlos.</p>
 
-                <p>Editamos el archivo <code>.env</code>:</p>
-<pre><code>cd app-data/cashu/
-nano .env</code></pre>
+                <p>Vamos a la cuenta creada en el tutorial de LNbits, iniciamos sesión y creamos la billetera. La siguiente imagen muestra el proceso.</p>
 
-                <p>Buscamos las siguientes lineas:</p>
+                <p><em>Imagen 1: Creación de billetera para depósitos del Mint.</em></p>
+                <img src="img/lnbits-cashu-mint-wallet.png" alt="LNbits Cashu Mint Wallet">
+
+                <ol>
+                    <li>Hacemos clic en <code>Add a new wallet</code>.</li>
+                    <li>Nos aparece una ventana donde introducimos el nombre de la billetera, ponemos Cashu Mint, puede ser cualquier nombre lo importante es que sepas para que es esa billetera.</li>
+                    <li>Adicionamos la billetera.</li>
+                </ol>
+
+                <p>Después de creada necesitamos obtener la clave api que nos permitirá recibir pagos y pagar facturas.</p>
+
+                <p>De la misma manera que fuimos en el tutorial anterior (LNbits) a buscar el id de billetera para las comisiones por transacción, buscamos la clave de <code>Admin key</code></p>
+
+                <p><em>Imagen 2: Clave <code>Admin key</code> para realizar y recibir pagos en el Mint de Cashu.</em></p>
+                <img src="img/lnbits-cashu-wallet-admin-key.png" alt="LNbits Cashu Wallet Admin Key">
+
+                <ol start="4">
+                    <li>Seleccionamos la llave <code>Admin key</code>.</li>
+                    <li>Copiamos la llave.</li>
+                </ol>
+
+                <p>Ahora en la terminal nos desplazamos al directorio <code>app-data/cashu/</code></p>
+<pre><code>cd app-data/cashu</code></pre>
+
+                <p>Editamos el archivo <code>.env</code></p>
+<pre><code>nano .env</code></pre>
+
+                <p>Luego buscamos los siguientes parámetros:</p>
 <pre><code># Use with LNbitsWallet
 MINT_LNBITS_ENDPOINT=https://yourlnbits.com
-MINT_LNBITS_KEY=gds87dskdsjhds71dsdsdsds2e</code></pre>
+MINT_LNBITS_KEY=gds87dskdsjhds71dsdsds2e</code></pre>
 
-                <p>y las sustituimos por las de nuestra infraestructura:</p>
+                <p>Donde dice <code>https://yourlnbits.com</code> ponemos <code>https://lnbits.cashu4community.xyz</code> y donde dice <code>MINT_LNBITS_KEY</code> sustituimos <code>gds87dskdsjhds71dsdsds2e</code> por la clave que copiamos anteriormente <code>55739ee04e53437aba54fa8c9e4175b8</code>. Quedando de la siguiente manera:</p>
 <pre><code># Use with LNbitsWallet
 MINT_LNBITS_ENDPOINT=https://lnbits.cashu4community.xyz
-MINT_LNBITS_KEY=176c60b55feb4c689b5cd00bebba6bba</code></pre>
+MINT_LNBITS_KEY=55739ee04e53437aba54fa8c9e4175b8</code></pre>
 
-                <p>Hemos usado la clave api de Admin key.</p>
+                <p>Salvamos y salimos del archivo <code>ctrl+s</code> y <code>ctrl+x</code></p>
 
-                <div class="tutorial-tip">
-                    Es importante verificar que el backend lightning del mint sea <code>LNbitsWallet</code>, lo hacemos buscando en el archivo <code>.env</code> el parámetro <code>MINT_BACKEND_BOLT11_SAT</code> si tiene otra cosa cambiar al de LNbits.
-                </div>
+                <p>Reiniciamos el contenedor <code>docker-compose restart cashu</code> y se aplican los cambios.</p>
 
-                <h2>Generando los certificados RPC</h2>
-                <p>Este paso es fundamental para permitir que el servicio Orchard se conecte vía RPC. Para generar estos certificados nos movemos al directorio <code>app-data/cashu/certs</code> de la siguiente manera:</p>
-<pre><code>cd app-data/cashu/certs/
-./generate_certificates.sh</code></pre>
+                <h2>6.2 Generando los certificados RPC</h2>
+                <p>Los certificados ssl son necesarios para poder conectarno vía RPC al Mint y ejecutar comandos remotos, útil si se quiere usar Orchard para administrar el Mint. Para generarlos nos trasladamos al directorio <code>certs</code> de la siguiente manera:</p>
+<pre><code>cd app-data/cashu/certs</code></pre>
 
-                <p>Comprobamos que se hayan generado los certificados:</p>
+                <p>ejecutamos el script <code>generate_certificates.sh</code> de la siguiente manera:</p>
+<pre><code>./generate_certificates.sh</code></pre>
+
+                <p>este script generará todos los certificados necesarios, podemos comprobar ejecutan el siguiente comando:</p>
 <pre><code>ls .
 ca_cert.pem  ca_private.pem  client_cert.pem  client_private.pem  generate_certificates.sh  server_cert.pem  server_private.pem</code></pre>
 
-                <h2>Reiniciamos el contenedor Docker</h2>
-                <p>Para que se actualicen los cambios ejecutamos lo siguiente:</p>
-<pre><code>docker compose restart cashu
-# O también 
-docker restart app_cashu</code></pre>
-                <p>Ambos comandos realizan la misma función pero el primero solo se puede ejecutar en la raíz del proyecto.</p>
+                <p><em>Imagen 3: Listado de archivos dentro del directorio certs.</em></p>
+                <img src="img/cashu-certs-files.png" alt="Cashu Certs Files">
 
-                <h2>Actualizando el Mint de Cashu</h2>
-                <p>Como usamos Docker de soporte de la infraestructura el proceso de actualización se hace relativamente fácil. Aquí te explico como hacerlo.</p>
+                <p>Tras realizar estos cambios reiniciamos el contenedor docker</p>
+<pre><code>docker-compose restart cashu</code></pre>
 
-                <h3>1. Respaldamos la base de datos del Mint</h3>
-                <p>Realizamos una copia de la base de datos ubicada en <code>/cashu4cs-deploy/app-data/cashu/data/mint/mint.sqlite3</code></p>
-<pre><code>cd cashu4cs-deploy/
-cp app-data/cashu/data/mint/mint.sqlite3 app-data/cashu/backup</code></pre>
-
-                <h3>2. Actualizamos el número de versión en el docker-compose.yml</h3>
-                <p>Editamos el archivo <code>docker-compose.yml</code> ubicado en la raíz del proyecto.</p>
-
-                <p>Localizamos el servicio cashu específicamente la siguiente linea:</p>
-<pre><code>cashu:
-  image: cashubtc/nutshell:0.19.2</code></pre>
-
-                <p>Como se observa es la version de nutshell 0.19.2 y en el momento en que se redacta este tutorial esta en su versión 0.20.0. Actualizamos el archivo con la versión más reciente.</p>
-<pre><code>cashu:
-  image: cashubtc/nutshell:0.20.2</code></pre>
-
-                <h3>3. Hacemos efectivo los cambios</h3>
-<pre><code>docker-compose up --force-recreate cashu -d</code></pre>
-
-                <p>Este proceso eliminará el contenedor con la versión vieja descargará la nueva versión y realizará las actualizaciones a la base de datos en caso de ser necesario.</p>
-
-                <div class="tutorial-tip">
-                    Es importante no violar el paso 1 porque de ocurrir un error podremos volver a la versión anterior restaurando la base de datos y revirtiendo los cambios del paso 2. También es recomendable revisar la notas de la nueva versión para conocer si se necesitan hacer cambios puntuales antes de actualizar.
-                </div>
-
-                <h2>Creando un nuevo Keysets desde la CLI</h2>
+                <h2>6.3 Creando un nuevo keysets desde la CLI</h2>
                 <p>Usaremos mint-cli para rotar los keyset y definir la comisión. Esto lo haremos para cada una de las unidades que tengamos en el mint ya sea sats, usd.</p>
 
-                <p>Para conocer que unidades tenemos activas en el mint, consultamos el endpoint <code>/v1/keysets</code>:</p>
-<pre><code>curl https://mint.cashu4community.xyz/v1/keysets
-{
+                <p>Para conocer que unidades tenemos activas en el mint, consultamos el endpoint <code>/v1/keysets</code>, lo haremos de la siguiente manera, esto se puede hacer también desde un navegador con solo introducir la url:</p>
+<pre><code>curl https://mint.cashu4community.xyz/v1/keysets</code></pre>
+
+                <p>El comando curl nos devuelve lo siguiente:</p>
+<pre><code>{
   "keysets": [
     {
       "id": "0145ee812683eaf8ce3859f2601c160d0c8f0d4139447848d0d6745350f3c4fb44",
@@ -151,9 +149,19 @@ cp app-data/cashu/data/mint/mint.sqlite3 app-data/cashu/backup</code></pre>
   ]
 }</code></pre>
 
-                <p>Ej: si quisiéramos cambiar el fee de 100 ppk (per-proof-of-knowledge) por sat (Bitcoin) a 50 ppk, ejecutariamos lo siguiente dentro del contenedor de cashu:</p>
-<pre><code>poetry run mint-cli -h cashu next-keyset sat 50
-final_expiry = None
+                <p>Lo anterior nos indica que existe un keyset cuya unidad es el sat, que se encuentra activo, con un <code>input_fee_ppk</code> de 100 y que no expira.</p>
+
+                <p>Ej: si quisiéramos cambiar el fee de 100 ppk (per-proof-of-knowledge) por sat (Bitcoin) a 50 ppk, ejecutaríamos lo siguiente dentro del contenedor de cashu:</p>
+<pre><code>docker exec -it app_cashu bash</code></pre>
+                <p>ya dentro del contenedor ejecutamos:</p>
+<pre><code>poetry run mint-cli -h cashu next-keyset sat 50</code></pre>
+
+                <div class="tutorial-tip">
+                    <strong>Nota:</strong> El argumento -h que acompaña al comando mint-cli es necesario porque en un entornos docker no se puede acceder directamente a 127.0.0.1, es por eso que usamos cashu ya que es el nombre del servicio declarado en el docker compose.
+                </div>
+
+                <p>lo que nos devolvería algo como esto:</p>
+<pre><code>final_expiry = None
 New keyset successfully created:
 keyset.id = '01e5bac64190f22f2959558b15cbab9f06798958f253a59fbe4687a9d875e3c720'
 keyset.unit = 'sat'
@@ -161,13 +169,11 @@ keyset.max_order = 64
 keyset.input_fee_ppk = 50
 0</code></pre>
 
-                <div class="tutorial-tip">
-                    El argumento -h que acompaña al comando mint-cli es necesario porque en un entornos docker no se puede acceder directamente a 127.0.0.1, es por eso que usamos cashu ya que es el nombre del servicio declarado en el docker compose.
-                </div>
+                <p>Si ahora ejecutamos nuevamente el comando:</p>
+<pre><code>curl https://mint.cashu4community.xyz/v1/keysets</code></pre>
 
-                <p>Comprobamos que se creo el nuevo keyset <code>curl https://mint.cashu4community.xyz/v1/keysets</code></p>
-<pre><code>curl https://mint.cashu4community.xyz/v1/keysets
-{
+                <p>Nos devuelve el par de keysets el antiguo y el nuevo.</p>
+<pre><code>{
   "keysets": [
     {
       "id": "0145ee812683eaf8ce3859f2601c160d0c8f0d4139447848d0d6745350f3c4fb44",
