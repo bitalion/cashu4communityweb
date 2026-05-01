@@ -58,56 +58,197 @@
     <main>
         <section class="tutorial-hero">
             <div class="container">
-                <h1 class="tutorial-title">Actualización de Servicios</h1>
+                <h1 class="tutorial-title">8 Actualización de los servicios de la Infraestructura</h1>
             </div>
         </section>
 
         <section class="tutorial-content">
             <div class="container">
 
-                <p>Realizar la actualización de los servicios en la infraestructura de Cashu4Community es relativamente fácil, aun así hay que tener algunas consideraciones importantes para no caer en fallos en los servicios o pérdida potencial de datos.</p>
+                <p>En este apartado recogeremos la actualización de los servicios que componen la infraestructura cashu4community.</p>
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Servicio</th>
-                            <th>Salvar</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>lnd</code></td>
-                            <td>Sí</td>
-                            <td>Consultar las notas de la versión a actualizar antes de hacer cualquier cambio</td>
-                        </tr>
-                        <tr>
-                            <td><code>tor</code></td>
-                            <td>No</td>
-                            <td>No se necesita</td>
-                        </tr>
-                        <tr>
-                            <td><code>cashu</code></td>
-                            <td>Sí</td>
-                            <td>Salvar la base de datos antes de actualizar (<code>app-data/cashu/data/mint/mint.sqlite3</code>) en la ruta <code>app-data/cashu/backup/</code></td>
-                        </tr>
-                        <tr>
-                            <td><code>lnbits</code></td>
-                            <td>Sí</td>
-                            <td>Salvar base de datos mediante <code>pg_dump -h db -u lnbits_user -p &lt;clave&gt; -d lnbits_db &gt; backup/lnbits_db-before-update.sql</code></td>
-                        </tr>
-                        <tr>
-                            <td><code>npm</code></td>
-                            <td>No</td>
-                            <td>No se necesita</td>
-                        </tr>
-                        <tr>
-                            <td><code>orchard</code></td>
-                            <td>Sí</td>
-                            <td>Salvar la base de datos <code>app-data/orchard/orchard.db</code> en <code>/app-data/orchard/backup</code></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h2>8.1 Lightning Network Daemon (LND)</h2>
+                <p>Para realizar cualquier actualización sobre el servicio LND, debe saber que de no tener la frase semilla y el último backup del estado de los canales corre el riesgo de que si falla la actualización por algún error no tendrá forma de restaurar el nodo.</p>
+
+                <p><strong>¿Dónde encontramos la frase semilla?</strong> La frase semilla la obtuvimos en el tutorial <code>Primeros pasos</code>, y la semilla solo se puede obtener una vez, así que no hay manera de obtenerla nuevamente.</p>
+
+                <p><strong>¿Dónde encontramos el respaldo de los canales?</strong> Este se guarda por defecto dentro del directorio data del nodo, en nuestra infraestructura se localiza en <code>app-data/lnd/data/chain/bitcoin/mainnet/chan-backup-archives/</code></p>
+
+                <p>listamos el directorio <code>chan-backup-archives/</code>:</p>
+<pre><code>ls app-data/lnd/data/chain/bitcoin/mainnet/chan-backup-archives/</code></pre>
+
+                <p><em>Imagen 1: Directorio de respaldo de canales en un LND.</em></p>
+                <img src="img/lnd-channel-backup-files.png" alt="Directorio de respaldo de canales LND">
+
+                <div class="tutorial-tip">
+                    <strong>Nota:</strong> En caso de una falla grave en el nodo solo necesitaremos el último archivo de backup. Pueden encontrar más información de cómo recuperar un nodo a partir de la frase semilla y el último estado de los canales <a href="#" target="_blank">aquí</a>.
+                </div>
+
+                <p>Es importante añadir que deben revisar las notas de lanzamiento de la nueva versión del nodo antes de actualizar, ya que en ocasiones hay que realizar cambios en las configuraciones del nodo para evitar fallas. Ahora sí vamos a ver cómo actualizar.</p>
+
+                <p>Nuestro nodo tiene la versión v0.19.3-beta y la vamos actualizar con la última versión v0.20.1-beta, tras revisar las notas de lanzamiento no hay nada que destacar por lo que solo necesitamos modificar el archivo <code>docker-compose.yml</code></p>
+
+                <div class="tutorial-tip">
+                    <strong>Nota:</strong> Tras la versión v0.19.3-beta se lanzó la v0.20.0-beta y luego la v0.20.1-beta, en este caso no hay cambios que obliguen a ir saltando de versión en versión. Si quiere sentirse cómodo vaya escalando poco a poco.
+                </div>
+
+                <p>Para actualizar la versión editamos el archivo <code>docker-compose.yml</code> y nos desplazamos hasta el servicio <code>lnd</code>:</p>
+<pre><code>nano docker-compose.yml</code></pre>
+
+                <p>El servicio lnd estaría compuesto por lo siguiente:</p>
+<pre><code>lnd:
+  image: lightninglabs/lnd:v0.19.3-beta
+  container_name: lightning-node-1
+  restart: unless-stopped
+  ports:
+    - "9735:9735"
+    - "10009:10009"
+    - "8080:8080"
+  volumes:
+    - ./app-data/lnd:/root/.lnd
+    - tor-data:/var/lib/tor:ro
+  command:
+    - --configfile=/root/.lnd/lnd.conf
+  depends_on:
+    - tor</code></pre>
+
+                <p>En la línea <code>image:</code> es donde se declara la versión de la imagen que usará nuestro contenedor, como queremos subir la versión donde dice <code>v0.19.3</code> ponemos <code>v0.20.1</code> quedando de la siguiente manera:</p>
+<pre><code>lnd:
+  image: lightninglabs/lnd:v0.20.1-beta
+  container_name: lightning-node-1
+  restart: unless-stopped
+  ports:
+    - "9735:9735"
+    - "10009:10009"
+    - "8080:8080"
+  volumes:
+    - ./app-data/lnd:/root/.lnd
+    - tor-data:/var/lib/tor:ro
+  command:
+    - --configfile=/root/.lnd/lnd.conf
+  depends_on:
+    - tor</code></pre>
+
+                <p>Salvamos y salimos del archivo <code>ctrl+s</code> y <code>ctrl+x</code></p>
+
+                <p>Recreamos el contenedor con el siguiente comando:</p>
+<pre><code>docker-compose up --force-recreate lnd -d</code></pre>
+
+                <p>Este comando descargará la nueva versión de la imagen, eliminará el contenedor con la versión anterior y lo creará a partir de la nueva imagen descargada.</p>
+
+                <h2>8.2 Actualizando LNbits</h2>
+                <p>Antes de realizar cambios en la versión de LNbits se recomienda realizar un backup de la base de datos, esto se puede hacer desde la cuenta super usuario de LNbits si no sabes cuál es puedes volver al tutorial de LNbits para saber cuál es.</p>
+
+                <p>Tras iniciar sesión en LNbits vamos a los <code>Settings</code> y damos clic en el botón <code>DOWNLOAD DATABASE BACKUP</code> que nos aparece al lado del botón <code>RESTART SERVER</code></p>
+
+                <p><em>Imagen 2: Respaldo de la Base de Datos.</em></p>
+
+                <p>El archivo zip descargado contiene un volcado de la base de datos, además una copia del directorio data de LNbits que incluye las extensiones y los log de la aplicación.</p>
+
+                <h3>8.2.1 Respaldando la base de datos desde la cli</h3>
+                <p>Podemos realizar una salva de la base de datos de manera fácil basta con ejecutar el comando:</p>
+<pre><code>docker exec -t app-lnbits pg_dump -U lnbits_user lnbits_db | gzip > lnbits_backup_$(date +%Y%m%d_%H%M%S).sql.gz</code></pre>
+
+                <p>Esto creará el archivo en el directorio actual desde donde se ejecutó el comando.</p>
+
+                <p>Ya tenemos la salva, vamos nuevamente al archivo <code>docker-compose.yml</code> y buscamos el servicio <code>lnbits</code>.</p>
+<pre><code>nano docker-compose.yml</code></pre>
+<pre><code>lnbits:
+  image: lnbits/lnbits:v1.4.0
+  container_name: app_lnbits
+  restart: unless-stopped
+  volumes:
+    - ./app-data/lnd/:/app/.lnd/:ro
+    - ./app-data/lnbits/data/:/app/data
+    - ./app-data/lnbits/.env:/app/.env</code></pre>
+
+                <p>Vemos que la versión de la imagen que estamos usando es la v1.4.0 y hay una nueva versión v1.5.3 en el repositorio github del proyecto, siempre es recomendable ver las notas de lanzamiento de la nueva versión para saber si hay que realizar algún paso extra antes de actualizar.</p>
+
+                <p>Cambiamos la versión v1.4.0 por la v1.5.3 en la línea <code>image:</code></p>
+<pre><code>lnbits:
+  image: lnbits/lnbits:v1.5.3
+  container_name: app_lnbits
+  restart: unless-stopped
+  volumes:
+    - ./app-data/lnd/:/app/.lnd/:ro
+    - ./app-data/lnbits/data/:/app/data
+    - ./app-data/lnbits/.env:/app/.env</code></pre>
+
+                <p>Salvamos y salimos del archivo <code>ctrl+s</code> y <code>ctrl+x</code></p>
+
+                <p>Recreamos el contenedor con el siguiente comando:</p>
+<pre><code>docker-compose up --force-recreate lnbits -d</code></pre>
+
+                <p>Este comando descargará la nueva versión de la imagen, eliminará el contenedor con la versión anterior y lo creará a partir de la nueva imagen descargada.</p>
+
+                <h2>8.3 Actualizando el Mint de Cashu</h2>
+                <p>Antes de actualizar de versión el mint de cashu debemos realizar una salva de la base de datos de cashu, como es una base de datos sqlite el proceso es más simple solo debemos hacer una copia del archivo <code>mint.sqlite3</code>.</p>
+
+                <p>Nos movemos hacia el directorio de cashu localizado en <code>app-data/cashu/</code></p>
+<pre><code>cd app-data/cashu</code></pre>
+
+                <p>Creamos un directorio backup en caso de no existir.</p>
+<pre><code>mkdir -p backup</code></pre>
+
+                <p>Copiamos la base de datos del mint.</p>
+<pre><code>cp data/mint/mint.sqlite3 backup/</code></pre>
+
+                <p>Luego de salvar la base de datos vamos al archivo <code>docker-compose.yml</code>:</p>
+<pre><code>nano docker-compose.yml</code></pre>
+<pre><code>cashu:
+  image: cashubtc/nutshell:0.19.2
+  container_name: app_cashu
+  restart: unless-stopped
+  volumes:
+    - ./app-data/cashu/.env:/app/.env
+    - ./app-data/cashu/data:/app/data
+    - ./app-data/cashu/certs:/app/certs
+    - ./app-data/cashu/certs/server_private.pem:/app/server_private.pem
+    - ./app-data/cashu/certs/server_cert.pem:/app/server_cert.pem
+    - ./app-data/cashu/certs/ca_cert.pem:/app/ca_cert.pem
+    - ./app-data/cashu/certs/client_cert.pem:/app/client_cert.pem
+    - ./app-data/cashu/certs/client_private.pem:/app/client_private.pem
+    - ./app-data/cashu/backup:/app/backup
+  command: ["poetry", "run", "mint"]
+  depends_on:
+    - lnbits</code></pre>
+
+                <p>Vamos a migrar de la versión 0.19.2 a la 0.20.0, como hicimos en los anteriores servicios cambiamos la versión en la línea <code>image:</code> quedando de la siguiente manera:</p>
+<pre><code>cashu:
+  image: cashubtc/nutshell:0.20.0
+  container_name: app_cashu
+  restart: unless-stopped
+  volumes:
+    - ./app-data/cashu/.env:/app/.env
+    - ./app-data/cashu/data:/app/data
+    - ./app-data/cashu/certs:/app/certs
+    - ./app-data/cashu/certs/server_private.pem:/app/server_private.pem
+    - ./app-data/cashu/certs/server_cert.pem:/app/server_cert.pem
+    - ./app-data/cashu/certs/ca_cert.pem:/app/ca_cert.pem
+    - ./app-data/cashu/certs/client_cert.pem:/app/client_cert.pem
+    - ./app-data/cashu/certs/client_private.pem:/app/client_private.pem
+    - ./app-data/cashu/backup:/app/backup
+  command: ["poetry", "run", "mint"]
+  depends_on:
+    - lnbits</code></pre>
+
+                <p>Salvamos y salimos del archivo <code>ctrl+s</code> y <code>ctrl+x</code></p>
+
+                <p>No olviden realizar un backup de la base de datos consulten las notas de la versión la imagen siguiente muestra un mensaje de aviso informando que hay cambios en la estructura de la base de datos tras la actualización y es necesario realizar una salva para evitar corrupción de datos tras una actualización fallida.</p>
+
+                <p><em>Imagen 3: Mensaje de aviso sobre cambios en la estructura de la base de datos.</em></p>
+                <img src="img/cashu-backup-database-info.png" alt="Cashu Backup Database Info">
+
+                <p>Solo nos queda ejecutar el comando:</p>
+<pre><code>docker-compose up --force-recreate cashu -d</code></pre>
+
+                <p>Que ya sabemos que hace descargar la nueva imagen eliminar el contenedor viejo y crearlo nuevamente con la nueva imagen.</p>
+
+                <h2>8.4 Resto de los servicios de la infraestructura</h2>
+                <p>Quizás te preguntes por qué no cubrimos el resto de los servicios. La razón es que todos ellos (Tor, Lightning Terminal, Nginx Proxy Manager, Redis, Postgres y Orchard) son soporte de la infraestructura: añaden funcionalidades o permiten gestionar los demás servicios. El procedimiento es siempre el mismo: editar <code>docker-compose.yml</code> y cambiar la versión.</p>
+
+                <h2>8.5 Solución de problemas</h2>
+                <p>Se irán añadiendo en la medida que la comunidad los vaya reportando.</p>
 
                 <div class="tutorial-nav">
                     <a href="orchard_es.html" class="nav-prev">
@@ -116,7 +257,7 @@
                     </a>
                     <a href="migrating-infrastructure_es.html" class="nav-next">
                         <span class="nav-label" data-lang-es="Siguiente" data-lang-en="Next">Siguiente</span>
-                        <span class="nav-title" data-lang-es="Migración de Infraestructura →" data-lang-en="Infrastructure Migration →">Migración de Infraestructura →</span>
+                        <span class="nav-title">Migración de Infraestructura →</span>
                     </a>
                 </div>
             </div>
