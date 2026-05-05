@@ -147,7 +147,7 @@
 
                 <h3>8.2.1 Respaldando la base de datos desde la cli</h3>
                 <p>Podemos realizar una salva de la base de datos de manera fácil basta con ejecutar el comando:</p>
-<pre><code>docker exec -t app-lnbits pg_dump -U lnbits_user lnbits_db | gzip > lnbits_backup_$(date +%Y%m%d_%H%M%S).sql.gz</code></pre>
+<pre><code>docker exec -t postgres_lnbits pg_dump -U lnbits_user lnbits_db | gzip > lnbits_backup_$(date +%Y%m%d_%H%M%S).sql.gz</code></pre>
 
                 <p>Esto creará el archivo en el directorio actual desde donde se ejecutó el comando.</p>
 
